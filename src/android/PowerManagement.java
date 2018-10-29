@@ -34,6 +34,9 @@ import android.view.View;
 
 import android.util.Log;
 
+import android.net.wifi.WifiManager;
+import android.net.wifi.WifiManager.WifiLock; 
+
 import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaInterface;
@@ -47,7 +50,9 @@ import org.apache.cordova.PluginResult.Status;
 public class PowerManagement extends CordovaPlugin {
 	// As we only allow one wake-lock, we keep a reference to it here
 	private PowerManager.WakeLock wakeLock = null;
+	private WifiLock wifiLock = null;
 	private PowerManager powerManager = null;
+	private WifiManager wifiManager = null;
 	private boolean releaseOnPause = true;
 
 	private Handler handler;
@@ -90,6 +95,7 @@ public class PowerManagement extends CordovaPlugin {
 	@Override
 	public void initialize(CordovaInterface cordova, CordovaWebView webViewPara) {
 
+		Log.d("AminLog","*** Amin working on this. version 1");
 		Context context = cordova.getActivity().getApplicationContext();
 
 		this.webView = webViewPara;
@@ -97,6 +103,7 @@ public class PowerManagement extends CordovaPlugin {
 		super.initialize(cordova, webViewPara);
 
 		this.powerManager = (PowerManager) cordova.getActivity().getSystemService(Context.POWER_SERVICE);
+		this.wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
 
 		handler = new Handler();
 	    wakeupIntent = PendingIntent.getBroadcast( context , 0,
@@ -162,6 +169,23 @@ public class PowerManagement extends CordovaPlugin {
 		}
 		else {
 			result = new PluginResult(PluginResult.Status.ILLEGAL_ACCESS_EXCEPTION,"WakeLock already active - release first");
+		}
+
+
+		if(this.wifiLock == null) {
+			Log.d("AminLog","*** wifiLock is null, so create one");
+			this.wifiLock = wifiManager.createWifiLock("CaireView");
+		}
+		
+		if(this.wifiLock != null) {
+			Log.d("AminLog","*** wifiLock not null at this point");
+			if(this.wifiLock.isHeld()) {
+				Log.d("AminLog","*** wifiLock is already held, so release");
+		        this.wifiLock.release();
+		    } else {
+		    	Log.d("AminLog","*** wifilock NOT held, so acquire");
+		    	this.wifiLock.acquire();
+		    }
 		}
 
 		return result;
